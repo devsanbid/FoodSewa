@@ -16,7 +16,7 @@ export default function SignupPage() {
             <div>
               <p className="font-semibold flex items-center gap-2">
                 🍽️ Invite your friends and family
-              </p>
+              </p>  
               <p className="text-gray-400">
                 Share the joy of easy ordering and discover new favorites together.
               </p>
