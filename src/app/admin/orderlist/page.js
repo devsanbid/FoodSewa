@@ -458,7 +458,7 @@ const Dashboard = () => {
 
             {/* Footer */}
             <div className="mt-8 text-center text-sm text-gray-400">
-              Designed, crafted and coded with ❤️ by Coderthemes.com
+              Thank you
             </div>
           </div>
 
