@@ -360,4 +360,4 @@ const RestaurantDashboard = () => {
   );
 };
 
-export default Dashboard;
+export default RestaurantDashboard;
