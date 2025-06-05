@@ -1,4 +1,3 @@
 {
-  "/admin/disheslist/page": "app/admin/disheslist/page.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js"
+  "/admin/dishdetails/page": "app/admin/dishdetails/page.js"
 }
