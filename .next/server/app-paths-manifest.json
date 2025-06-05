@@ -1,5 +1,5 @@
 {
-  "/admin/addrestaurant/page": "app/admin/addrestaurant/page.js",
+  "/admin/editrestaurant/page": "app/admin/editrestaurant/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/page": "app/page.js"
 }
