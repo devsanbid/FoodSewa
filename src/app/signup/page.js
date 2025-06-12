@@ -1,6 +1,7 @@
 "use client"
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -14,9 +15,8 @@ export default function SignupPage() {
           <h2 className="text-4xl font-bold">Craving something delicious?</h2>
           <div className="space-y-6 text-sm">
             <div>
-              <p className="font-semibold flex items-center gap-2">
-                🍽️ Invite your friends and family
-              </p>  
+                <Image src="/Google.png" width={10} height={10} alt="google"/> Invite your friends and family
+               
               <p className="text-gray-400">
                 Share the joy of easy ordering and discover new favorites together.
               </p>
@@ -43,9 +43,14 @@ export default function SignupPage() {
         {/* Right Section */}
         <div className="bg-gray-900 p-8 rounded-xl shadow-md space-y-6">
           <div className="flex justify-between gap-4">
-            <button className="bg-gray-700 w-full py-2 rounded-md">Google</button>
-            <button className="bg-gray-700 w-full py-2 rounded-md">Github</button>
-            <button className="bg-gray-700 w-full py-2 rounded-md">Gitlab</button>
+            <button className="bg-gray-700 w-full py-2 rounded-md flex justify-center items-center gap-2">
+            <Image src="/Google.png" width={15} height={15} alt="google"/> Google
+            </button>
+            <button className="bg-gray-700 w-full py-2 rounded-md flex justify-center items-center gap-2">
+            <Image src="/Vector.png" width={15} height={15} alt="github"/> Github</button>
+            <button className="bg-gray-700 w-full py-2 rounded-md flex justify-center items-center gap-2">
+            <Image src="/logo_art.png" width={15} height={15} alt="github"/>
+              Gitlab</button>
           </div>
 
           <div className="text-center text-gray-500">Or</div>
