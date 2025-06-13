@@ -81,7 +81,7 @@ export default function RestaurantForm() {
           <Maximize className="w-6 h-6 text-gray-400 cursor-pointer hover:text-white" />
           <div className="relative">
             <Bell className="w-6 h-6 text-gray-400 cursor-pointer hover:text-white" />
-            <span className="absolute -top-1 -right-1 bg-orange-500 text-xs rounded-full w-4 h-4 flex items-center justify-center">2</span>
+            <span className="absolute -top-1 -right-1 bg-[#1e1e2e] text-xs rounded-full w-4 h-4 flex items-center justify-center">2</span>
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
@@ -217,7 +217,7 @@ export default function RestaurantForm() {
                 onClick={() => setActiveTab(tab)}
                 className={`px-6 py-3 rounded-t-lg font-medium ${
                   activeTab === tab 
-                    ? 'bg-orange-500 text-white' 
+                    ? 'bg-[#1e1e2e] text-white' 
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 } ${index === 0 ? 'rounded-tl-lg' : ''} ${index === tabs.length - 1 ? 'rounded-tr-lg' : ''}`}
               >

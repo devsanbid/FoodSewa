@@ -1,6 +1,6 @@
 const categories = ["Hot Dishes", "Cold Dishes", "Soup", "Grill", "Appetizer", "Dessert"];
 const dishes = [
-  { name: "Spicy seasoned seafood noodles", price: 2.29, available: 20, img: "/Image1.png" },
+  { name: "Spicy seasoned seafood noodles", price: 2.29, available: 20, img: "/seasoned.png" },
   { name: "Salted Pasta with mushroom sauce", price: 2.69, available: 11, img: "/Image2.png" },
   { name: "Beef dumpling in hot and sour soup", price: 2.99, available: 16, img: "/Image3.png" },
   { name: "Healthy noodle with spinach leaf", price: 3.29, available: 22, img: "/Image5.png" },

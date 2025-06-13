@@ -1,15 +1,31 @@
-import { FiHome, FiBell, FiMail, FiSettings, FiPieChart } from 'react-icons/fi';
+import {
+  FiHome,
+  FiBell,
+  FiMail,
+  FiSettings,
+  FiPieChart,
+  FiLogOut,
+} from "react-icons/fi";
 
-const icons = [FiPieChart, FiHome, FiMail, FiBell, FiSettings];
+const icons = [FiPieChart, FiHome, FiMail, FiBell, FiSettings, FiLogOut];
 
 export default function Sidebar() {
   return (
-    <div className="w-20 bg-[#252836] p-4 flex flex-col gap-6 items-center">
+    <div className="w-20 bg-[#252836] flex flex-col items-center justify-evenly">
       <div className="bg-[#EA7C69] p-2 rounded-xl">
         <FiPieChart size={24} />
       </div>
+
       {icons.slice(1).map((Icon, idx) => (
-        <Icon key={idx} className="text-gray-400 hover:text-white" size={24} />
+        <div
+          className="hover:bg-orange-300/30 w-full flex justify-center py-3 hover:text-white"
+          key={idx}
+        >
+          <Icon
+            className="text-[#EA7C69] hover:scale-145 transition-transform duration-300"
+            size={24}
+          />
+        </div>
       ))}
     </div>
   );
