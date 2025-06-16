@@ -215,71 +215,7 @@ const RestaurantDetails = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
-        {/* Logo */}
-        <div className="p-6 border-b border-gray-700">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">Y</span>
-            </div>
-            <span className="text-xl font-bold">Yum</span>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <div className="flex-1 overflow-y-auto py-4">
-          {sidebarItems.map((item, index) => (
-            <div key={index}>
-              <div className={`flex items-center px-6 py-3 hover:bg-gray-700 cursor-pointer ${
-                item.active ? 'bg-gray-700 border-r-2 border-orange-500' : ''
-              }`}>
-                <item.icon className="w-5 h-5 mr-3" />
-                <span className="flex-1 text-sm">{item.label}</span>
-                {item.hasDropdown && <ChevronDown className="w-4 h-4" />}
-              </div>
-              {item.active && item.subItems && (
-                <div className="ml-8 border-l border-gray-700">
-                  {item.subItems.map((subItem, subIndex) => (
-                    <div key={subIndex} className={`pl-6 py-2 text-sm cursor-pointer hover:text-orange-500 ${
-                      subItem.active ? 'text-orange-500' : 'text-gray-400'
-                    }`}>
-                      {subItem.label}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Upgrade Section */}
-        <div className="p-6 border-t border-gray-700">
-          <div className="bg-orange-500 rounded-lg p-4 text-center">
-            <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center mx-auto mb-2">
-              <span className="text-white">⚡</span>
-            </div>
-            <p className="text-white text-sm mb-2">🔥 Upgrade Your Plan. Find Out More</p>
-            <button className="text-orange-200 text-xs underline">Contact Support</button>
-          </div>
-        </div>
-
-        {/* Profile */}
-        <div className="p-6 border-t border-gray-700 flex items-center space-x-3">
-          <User className="w-6 h-6" />
-          <div className="flex-1">
-            <p className="text-sm">Profile</p>
-          </div>
-        </div>
-
-        {/* Logout */}
-        <div className="px-6 pb-6">
-          <button className="flex items-center space-x-2 text-red-400 hover:text-red-300">
-            <span className="text-sm">🔴</span>
-            <span className="text-sm">Logout</span>
-          </button>
-        </div>
-      </div>
+      
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">

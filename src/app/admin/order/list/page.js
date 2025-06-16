@@ -229,100 +229,11 @@ const Dashboard = () => {
 
   return (
     <div className="flex h-screen bg-gray-900 text-white">
-      {/* Sidebar */}
-      <div className="w-64 bg-gray-800 border-r border-gray-700">
-        {/* Logo */}
-        <div className="flex items-center p-4 border-b border-gray-700">
-          <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center mr-3">
-            <span className="text-white font-bold text-sm">Y</span>
-          </div>
-          <span className="text-xl font-bold text-white">Yum</span>
-        </div>
 
-        {/* Navigation */}
-        <nav className="mt-4">
-          {sidebarItems.map((item, index) => (
-            <div key={index}>
-              <div className={`flex items-center justify-between px-4 py-3 hover:bg-gray-700 cursor-pointer ${
-                item.active ? 'bg-gray-700 border-r-2 border-orange-500' : ''
-              }`}>
-                <div className="flex items-center">
-                  <item.icon className={`w-5 h-5 mr-3 ${item.active ? 'text-orange-500' : 'text-gray-400'}`} />
-                  <span className={`text-sm ${item.active ? 'text-white' : 'text-gray-300'}`}>
-                    {item.label}
-                  </span>
-                </div>
-                {item.hasSubmenu && (
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
-                )}
-              </div>
-              {item.active && item.hasSubmenu && (
-                <div className="ml-8 mt-1 mb-2">
-                  <div className="py-2 px-4 text-sm text-orange-500 bg-gray-700 rounded-r-lg mr-4">
-                    Orders List
-                  </div>
-                  <div className="py-2 px-4 text-sm text-gray-400 hover:text-white cursor-pointer">
-                    Order Details
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </nav>
-
-        {/* Bottom Section */}
-        <div className="absolute bottom-0 left-0 right-0 w-64 p-4 border-t border-gray-700">
-          <div className="bg-gray-700 rounded-lg p-3 mb-4">
-            <div className="flex items-center mb-2">
-              <div className="w-6 h-6 bg-orange-500 rounded mr-2 flex items-center justify-center">
-                <span className="text-xs">⚡</span>
-              </div>
-              <span className="text-sm font-medium">Upgrade Your Plan. Find Out here</span>
-            </div>
-          </div>
-          <button className="w-full bg-orange-500 text-white py-2 px-3 rounded-lg text-sm mb-3 hover:bg-orange-600">
-            Contact Support
-          </button>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <User className="w-5 h-5 text-gray-400 mr-2" />
-              <span className="text-sm text-gray-300">Profile</span>
-            </div>
-            <LogOut className="w-4 h-4 text-gray-400 cursor-pointer hover:text-white" />
-          </div>
-        </div>
-      </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Search className="w-5 h-5 text-gray-400 mr-3" />
-              <input
-                type="text"
-                placeholder="Search for items..."
-                className="bg-transparent text-gray-300 placeholder-gray-500 focus:outline-none"
-              />
-            </div>
-            <div className="flex items-center space-x-4">
-              <Globe className="w-5 h-5 text-gray-400 cursor-pointer hover:text-white" />
-              <Maximize className="w-5 h-5 text-gray-400 cursor-pointer hover:text-white" />
-              <div className="relative">
-                <Bell className="w-5 h-5 text-gray-400 cursor-pointer hover:text-white" />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full"></div>
-              </div>
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-orange-500 rounded-full mr-2"></div>
-                <div>
-                  <div className="text-sm font-medium">Katya Botosh</div>
-                  <div className="text-xs text-gray-400">Admin</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
+
 
         <div className="flex flex-1">
           {/* Main Dashboard Content */}

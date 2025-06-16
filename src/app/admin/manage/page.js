@@ -5,23 +5,7 @@ import React from 'react';
 export default function App() {
   return (
     <div className="flex h-screen bg-[#0f172a] text-white">
-      {/* Sidebar */}
-      <aside className="w-60 bg-[#1e293b] flex flex-col p-4 space-y-4">
-        <h1 className="text-2xl font-bold text-orange-500">🍽 Yum</h1>
-        <nav className="flex flex-col space-y-2">
-          <a className="hover:text-orange-400" href="#">Dashboard</a>
-          <a className="text-orange-400 font-semibold" href="#">Manage</a>
-          <a href="#">Orders</a>
-          <a href="#">Customers</a>
-          <a href="#">Restaurants</a>
-          <a href="#">Dishes</a>
-          <a href="#">Wallet</a>
-        </nav>
-        <div className="mt-auto space-y-2">
-          <button className="bg-orange-500 py-2 rounded">Contact Support</button>
-          <a href="#" className="text-red-400">Logout</a>
-        </div>
-      </aside>
+     
 
       {/* Main Content */}
       <div className="flex flex-col flex-1">
