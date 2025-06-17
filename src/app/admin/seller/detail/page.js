@@ -214,51 +214,7 @@ export default function SellerDetails() {
 
       {/* Main content */}
       <div className="lg:ml-64">
-        {/* Header */}
-        <header className="bg-gray-800 border-b border-gray-700 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button 
-                onClick={toggleSidebar}
-                className="lg:hidden p-2 rounded-lg hover:bg-gray-700"
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-              <div className="relative hidden md:block">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search for items..."
-                  className="bg-gray-700 text-white pl-10 pr-4 py-2 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <button className="p-2 rounded-lg hover:bg-gray-700">
-                <Globe className="w-5 h-5" />
-              </button>
-              <button className="p-2 rounded-lg hover:bg-gray-700">
-                <Maximize2 className="w-5 h-5" />
-              </button>
-              <div className="relative">
-                <button className="p-2 rounded-lg hover:bg-gray-700">
-                  <Bell className="w-5 h-5" />
-                </button>
-                <span className="absolute -top-1 -right-1 bg-orange-500 text-xs rounded-full w-5 h-5 flex items-center justify-center">1</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-                  <User className="w-4 h-4" />
-                </div>
-                <div className="hidden md:block">
-                  <div className="text-sm font-medium">Katya Botosh</div>
-                  <div className="text-xs text-gray-400">Admin</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
+ 
 
         {/* Page content */}
         <div className="p-4 md:p-6">
