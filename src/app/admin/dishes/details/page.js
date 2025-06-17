@@ -54,44 +54,7 @@ export default function GujaratiThaliPage() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="bg-slate-800 border-b border-slate-700 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search for items..."
-                  className="bg-slate-700 border border-slate-600 rounded-lg pl-10 pr-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 w-80"
-                />
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button className="p-2 text-slate-400 hover:text-white">
-                <Globe className="w-5 h-5" />
-              </button>
-              <button className="p-2 text-slate-400 hover:text-white">
-                <Maximize2 className="w-5 h-5" />
-              </button>
-              <button className="p-2 text-slate-400 hover:text-white relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">2</span>
-              </button>
-              <div className="flex items-center space-x-2">
-                <img
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-                  alt="Profile"
-                  className="w-8 h-8 rounded-full"
-                />
-                <div className="text-sm">
-                  <div className="text-white">Kaiya Botosh</div>
-                  <div className="text-slate-400">Admin</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
+      
 
         {/* Breadcrumb */}
         <div className="p-4 border-b border-slate-700">
