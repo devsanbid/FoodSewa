@@ -2,9 +2,11 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const router =  useRouter()
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-gray-800 text-white">
@@ -23,10 +25,10 @@ export default function SignupPage() {
               </p>
             </div>
             <div>
-            <Image src="/tickicon.png" width={20} height={20} alt="tick icon" />{" "}
+              <Image src="/tickicon.png" width={20} height={20} alt="tick icon" />{" "}
 
               <p className="font-semibold flex items-center gap-2 my-1.5">
-              Track your order in real-time
+                Track your order in real-time
               </p>
               <p className="text-gray-400">
                 Get live updates on your delivery and know exactly when to
@@ -34,11 +36,11 @@ export default function SignupPage() {
               </p>
             </div>
             <div>
-            <Image src="/shieldicon.png" width={20} height={20} alt="shield icon" />{" "}
+              <Image src="/shieldicon.png" width={20} height={20} alt="shield icon" />{" "}
 
               <p className="font-semibold flex items-center gap-2 my-1.5">
 
-                 Secure and reliable delivery
+                Secure and reliable delivery
               </p>
               <p className="text-gray-400">
                 We ensure your food arrives fresh and safely to your doorstep.
@@ -80,71 +82,70 @@ export default function SignupPage() {
               </div>
             </div>
 
-          <div>
-            <label>Last Name</label>
-          
-            <div className="bg-gray-800 p-2 rounded-md flex gap-1.5 items-center">
-              <Image
-                src="/lastnameicon.png"
-                width={15}
-                height={10}
-                alt="lastname"
-              />
-              <input type="text" placeholder="last Name" />
+            <div>
+              <label>Last Name</label>
+
+              <div className="bg-gray-800 p-2 rounded-md flex gap-1.5 items-center">
+                <Image
+                  src="/lastnameicon.png"
+                  width={15}
+                  height={10}
+                  alt="lastname"
+                />
+                <input type="text" placeholder="last Name" />
+              </div>
             </div>
-          </div>
           </div>
 
           <div>
             <label>Username</label>
-          
-<div className="bg-gray-800 p-2 rounded-md flex gap-1.5 items-center">
-<Image
+            <div className="bg-gray-800 p-2 rounded-md flex gap-1.5 items-center">
+              <Image
                 src="/usernameicon.png"
                 width={15}
                 height={10}
                 alt="username"
               />
 
-          <input
-            type="text"
-            placeholder="Username"
-            className="bg-gray-800 w-full p-2 rounded-md"
-          />
-          </div>
+              <input
+                type="text"
+                placeholder="Username"
+                className="bg-gray-800 w-full p-2 rounded-md"
+              />
+            </div>
           </div>
 
           <label>Email</label>
           <div className="bg-gray-800 p-2 rounded-md flex gap-1.5 items-center">
-<Image
-                src="/email.png"
-                width={15}
-                height={10}
-                alt="email icon"
-              />
-          <input
-            type="email"
-            placeholder="Email"
-            className="bg-gray-800 w-full p-2 rounded-md"
-          />
+            <Image
+              src="/email.png"
+              width={15}
+              height={10}
+              alt="email icon"
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              className="bg-gray-800 w-full p-2 rounded-md"
+            />
           </div>
 
           <label>Password</label>
           <div className="bg-gray-800 p-2 rounded-md flex gap-1.5 items-center">
-<Image
-                src="/lock-01.png"
-                width={15}
-                height={10}
-                alt="email icon"
+            <Image
+              src="/lock-01.png"
+              width={15}
+              height={10}
+              alt="email icon"
+            />
+
+            <div className="flex">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                className="bg-gray-800 w-full p-2 pr-65 rounded-md"
               />
 
-          <div className="flex">
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              className="bg-gray-800 w-full p-2 pr-65 rounded-md"
-            />
-          
             </div>
             <button
               type="button"
@@ -172,9 +173,9 @@ export default function SignupPage() {
 
           <p className="text-sm text-center text-gray-400">
             Already have an account?{" "}
-            <a href="#" className="text-orange-400 underline">
+            <button onClick={() => router.push("/login")} className="text-orange-400 underline">
               Login
-            </a>
+            </button>
           </p>
         </div>
       </div>
