@@ -1,10 +1,13 @@
+"use client"
 import React from "react";
 import { FaGoogle, FaGithub, FaGitlab, FaUser, FaLock } from "react-icons/fa";
 import Image from "next/image";
- import { Boxes } from "@/components/ui/background-boxes";
- import { cn } from "@/lib/utils";
+import { Boxes } from "@/components/ui/background-boxes";
+import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter()
   return (
     <div className="min-h-screen realtive bg-gradient-to-br from-black via-gray-900 to-gray-800 text-white flex items-center justify-center px-4">
 
@@ -82,14 +85,14 @@ export default function LoginPage() {
                 className="w-full py-2 px-2 rounded mt-1.5 bg-gray-800 text-white focus:outline-none flex gap-3 items-center"
               >
                 <FaLock />
-           
-              <input
-                type="password"
-                placeholder="Password"
-                className="w-full"
-              />
+
+                <input
+                  type="password"
+                  placeholder="Password"
+                  className="w-full"
+                />
                 👁️
-             
+
               </div>
             </div>
 
@@ -100,9 +103,9 @@ export default function LoginPage() {
 
           <p className="text-sm text-center text-gray-400 mt-4">
             No account?{" "}
-            <a href="#" className="bg- hover:underline">
+            <button onClick={() => router.push("/signup")} className="bg- hover:underline">
               Register here
-            </a>
+            </button>
           </p>
         </div>
       </div>
