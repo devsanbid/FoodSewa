@@ -34,7 +34,8 @@ export async function GET(request) {
     const features = searchParams.get('features') ? searchParams.get('features').split(',') : [];
 
     // Build query
-    let query = { isActive: true, isVerified: true };
+    let query = { isActive: true };
+    // Note: Removed isVerified: true requirement to show all active restaurants
 
     // Text search
     if (search) {
@@ -196,6 +197,7 @@ export async function GET(request) {
         'address.state': 1,
         'address.coordinates': 1,
         logo: 1,
+        bannerImage: 1,
         images: { $slice: ['$images', 3] }, // Only first 3 images
         'rating.average': 1,
         'rating.count': 1,
@@ -250,7 +252,7 @@ export async function GET(request) {
 
     // Get popular cuisines for filters
     const cuisineStats = await Restaurant.aggregate([
-      { $match: { isActive: true, isVerified: true } },
+      { $match: { isActive: true } },
       { $unwind: '$cuisine' },
       { $group: { _id: '$cuisine', count: { $sum: 1 } } },
       { $sort: { count: -1 } },

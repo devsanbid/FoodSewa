@@ -18,7 +18,7 @@ export async function GET(request, { params }) {
 
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     
     // Extract query parameters
@@ -54,7 +54,7 @@ export async function GET(request, { params }) {
       );
     }
 
-    if (!restaurant.isActive || !restaurant.isVerified) {
+    if (!restaurant.isActive) {
       return NextResponse.json(
         { success: false, message: 'Restaurant is not available' },
         { status: 404 }
@@ -88,6 +88,8 @@ export async function GET(request, { params }) {
       name: restaurant.name,
       description: restaurant.description,
       cuisine: restaurant.cuisine,
+      profileImage: restaurant.profileImage,
+      bannerImage: restaurant.bannerImage,
       address: restaurant.address,
       phone: restaurant.phone,
       email: restaurant.email,
@@ -120,7 +122,7 @@ export async function GET(request, { params }) {
       const reviews = await Review.find({
         restaurant: id,
         isHidden: false,
-        moderationStatus: 'approved'
+        moderationStatus: { $in: ['approved', 'pending'] }
       })
       .populate('user', 'firstName lastName username')
       .sort({ createdAt: -1 })
@@ -131,7 +133,7 @@ export async function GET(request, { params }) {
       const totalReviews = await Review.countDocuments({
         restaurant: id,
         isHidden: false,
-        moderationStatus: 'approved'
+        moderationStatus: { $in: ['approved', 'pending'] }
       });
 
       const reviewStats = await Review.getRestaurantAverageRating(id);
@@ -196,7 +198,7 @@ export async function POST(request, { params }) {
 
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { action } = body;
 

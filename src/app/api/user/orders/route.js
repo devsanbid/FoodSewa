@@ -4,6 +4,7 @@ import Order from '@/models/Order';
 import Cart from '@/models/Cart';
 import Restaurant from '@/models/Restaurant';
 import Notification from '@/models/Notification';
+import Review from '@/models/Review';
 import { connectDB } from '@/lib/mongodb';
 import mongoose from 'mongoose';
 
@@ -31,9 +32,16 @@ export async function GET(request) {
     const search = searchParams.get('search') || '';
     const startDate = searchParams.get('startDate') || '';
     const endDate = searchParams.get('endDate') || '';
+    const hasReview = searchParams.get('hasReview');
+    const restaurant = searchParams.get('restaurant');
 
     // Build query
     let query = { customer: user.id };
+
+    // Restaurant filter
+    if (restaurant) {
+      query.restaurant = restaurant;
+    }
 
     // Status filter
     if (status) {
@@ -50,6 +58,15 @@ export async function GET(request) {
       query.createdAt = { $gte: new Date(startDate) };
     } else if (endDate) {
       query.createdAt = { $lte: new Date(endDate) };
+    }
+
+    // Review filter
+    if (hasReview !== null && hasReview !== '') {
+      if (hasReview === 'false') {
+        query['rating.overall'] = { $exists: false };
+      } else if (hasReview === 'true') {
+        query['rating.overall'] = { $exists: true };
+      }
     }
 
     // Search filter (restaurant name or order number)
@@ -90,7 +107,7 @@ export async function GET(request) {
 
     // Get order statistics
     const stats = await Order.aggregate([
-      { $match: { customer: mongoose.Types.ObjectId(user.id) } },
+      { $match: { customer: new mongoose.Types.ObjectId(user.id) } },
       {
         $group: {
           _id: null,
@@ -180,7 +197,7 @@ export async function GET(request) {
 
     // Get favorite restaurants
     const favoriteRestaurants = await Order.aggregate([
-      { $match: { customer: mongoose.Types.ObjectId(user.id) } },
+      { $match: { customer: new mongoose.Types.ObjectId(user.id) } },
       { $group: { _id: '$restaurant', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 3 },
@@ -346,6 +363,15 @@ export async function POST(request) {
       customizations: item.customizations
     }));
 
+    // Generate unique order number
+    const generateOrderNumber = () => {
+      const timestamp = Date.now().toString();
+      const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+      return `FS${timestamp.slice(-6)}${random}`;
+    };
+    
+    const orderNumber = generateOrderNumber();
+
     // Calculate estimated delivery/pickup time
     const now = new Date();
     const prepTime = Math.max(...cart.items.map(item => item.preparationTime || 15));
@@ -364,6 +390,7 @@ export async function POST(request) {
 
     // Create order
     const order = await Order.create({
+      orderNumber,
       customer: user.id,
       restaurant: cart.restaurant,
       items: orderItems,
@@ -397,33 +424,29 @@ export async function POST(request) {
     // Clear the cart after successful order creation
     await cart.clearCart();
 
-    // Create order notification
-    await Notification.createOrderNotification(
-      user.id,
-      order._id,
-      'order-confirmed',
-      {
-        title: 'Order Placed Successfully!',
-        message: `Your order #${order.orderNumber} has been placed and is awaiting confirmation.`,
-        data: {
-          orderId: order._id,
-          orderNumber: order.orderNumber,
-          restaurantName: restaurant.name
-        },
-        actionButton: {
-          text: 'View Order',
-          url: `/user/orders/${order._id}`,
-          action: 'navigate'
-        }
+    // Create order notification asynchronously to avoid blocking the response
+    setImmediate(async () => {
+      try {
+        await Notification.createOrderNotification(
+          user.id,
+          'order-confirmed',
+          {
+            orderId: order._id,
+            orderNumber: order.orderNumber,
+            restaurantName: restaurant.name
+          }
+        );
+      } catch (notificationError) {
+        console.error('Notification creation failed:', notificationError);
       }
-    );
+    });
 
     return NextResponse.json({
       success: true,
       message: 'Order placed successfully',
       data: {
         order,
-        redirectUrl: `/user/orderconfirmation/${order._id}`
+        redirectUrl: `/user/orderhistory`
       }
     });
   } catch (error) {

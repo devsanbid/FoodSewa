@@ -19,7 +19,7 @@ export async function GET(request, { params }) {
 
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
 
     // Validate order ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -30,12 +30,11 @@ export async function GET(request, { params }) {
     }
 
     // Find order and populate related data
-    const order = await Order.findOne({
+    let order = await Order.findOne({
       _id: id,
       customer: user.id
     })
-    .populate('restaurant', 'name logo cuisine address phone email website operatingHours')
-    .populate('items.menuItem', 'name description images category allergens nutritionalInfo');
+    .populate('restaurant', 'name logo cuisine address phone email website operatingHours menu');
 
     if (!order) {
       return NextResponse.json(
@@ -44,8 +43,50 @@ export async function GET(request, { params }) {
       );
     }
 
+    // Initialize tracking for legacy orders if missing
+    if (!order.tracking) {
+      await Order.updateOne(
+        { _id: order._id },
+        {
+          $set: {
+            tracking: {
+              history: [{
+                status: order.status,
+                timestamp: order.createdAt || new Date(),
+                description: `Order ${order.status}`,
+                location: 'System'
+              }],
+              currentLocation: {}
+            }
+          }
+        }
+      );
+      
+      // Refetch the order to get updated tracking data with methods intact
+      const updatedOrder = await Order.findById(order._id)
+        .populate('restaurant', 'name logo cuisine address phone email website operatingHours menu');
+      
+      if (updatedOrder) {
+        order = updatedOrder;
+      }
+    }
+
+    // Manually populate menu item details from restaurant's menu
+    let populatedItems = order.items;
+    if (order.restaurant && order.restaurant.menu) {
+      populatedItems = order.items.map(item => {
+        const menuItem = order.restaurant.menu.find(menuItem => 
+          menuItem._id.toString() === item.menuItem.toString()
+        );
+        return {
+          ...item.toObject(),
+          menuItem: menuItem || null
+        };
+      });
+    }
+
     // Get order tracking history
-    const trackingHistory = order.tracking.history || [];
+    const trackingHistory = order.tracking?.history || [];
 
     // Check if order can be cancelled
     const canCancel = order.canCancel();
@@ -68,7 +109,10 @@ export async function GET(request, { params }) {
     return NextResponse.json({
       success: true,
       data: {
-        order,
+        order: {
+          ...order.toObject(),
+          items: populatedItems
+        },
         trackingHistory,
         canCancel,
         canRate,
@@ -99,7 +143,7 @@ export async function PUT(request, { params }) {
 
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { action } = body;
 
@@ -146,7 +190,13 @@ export async function PUT(request, { params }) {
           refundAmount: order.pricing.total
         };
 
-        // Add tracking entry
+        // Add tracking entry (initialize if missing)
+        if (!order.tracking) {
+          order.tracking = {
+            history: [],
+            currentLocation: {}
+          };
+        }
         order.tracking.history.push({
           status: 'cancelled',
           timestamp: new Date(),
@@ -159,17 +209,12 @@ export async function PUT(request, { params }) {
         // Create cancellation notification
         await Notification.createOrderNotification(
           user.id,
-          order._id,
           'order-cancelled',
           {
-            title: 'Order Cancelled',
-            message: `Your order #${order.orderNumber} has been cancelled. Refund will be processed within 3-5 business days.`,
-            data: {
-              orderId: order._id,
-              orderNumber: order.orderNumber,
-              restaurantName: order.restaurant.name,
-              refundAmount: order.pricing.total
-            }
+            orderId: order._id,
+            orderNumber: order.orderNumber,
+            restaurantName: order.restaurant.name,
+            cancellationReason: reason
           }
         );
 
@@ -320,7 +365,7 @@ export async function DELETE(request, { params }) {
 
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
 
     // Validate order ID
     if (!mongoose.Types.ObjectId.isValid(id)) {

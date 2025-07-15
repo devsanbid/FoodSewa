@@ -182,8 +182,12 @@ export async function PUT(request) {
     const body = await request.json();
     const { action, itemIndex, quantity, couponCode } = body;
 
-    const cart = await Cart.findOne({ user: user.id, isActive: true });
-    if (!cart) {
+    let cart = await Cart.findOne({ user: user.id, isActive: true });
+    
+    // For sync-cart action, create a new cart if none exists
+    if (!cart && body.action === 'sync-cart') {
+      cart = await Cart.getOrCreateCart(user.id);
+    } else if (!cart) {
       return NextResponse.json(
         { success: false, message: 'Cart not found' },
         { status: 404 }
@@ -264,11 +268,89 @@ export async function PUT(request) {
         });
 
       case 'clear-cart':
-        await cart.clearCart();
+        try {
+          await cart.clearCart();
+        } catch (clearError) {
+          console.error('Error clearing cart:', clearError);
+          return NextResponse.json(
+            { success: false, message: 'Failed to clear cart' },
+            { status: 500 }
+          );
+        }
         
         return NextResponse.json({
           success: true,
           message: 'Cart cleared successfully',
+          data: {
+            cart,
+            summary: cart.getSummary()
+          }
+        });
+
+      case 'sync-cart':
+        const { items, discount: syncDiscount, couponCode: syncCouponCode } = body;
+        if (!items || !Array.isArray(items)) {
+          return NextResponse.json(
+            { success: false, message: 'Items array is required for sync' },
+            { status: 400 }
+          );
+        }
+
+        try {
+          await cart.clearCart();
+        } catch (clearError) {
+          console.error('Error clearing cart during sync:', clearError);
+          return NextResponse.json(
+            { success: false, message: 'Failed to clear cart for sync' },
+            { status: 500 }
+          );
+        }
+
+        if (items.length > 0) {
+          const firstItem = items[0];
+          const restaurantId = firstItem.restaurantId || firstItem.restaurant?._id || firstItem.restaurant;
+          const restaurant = await Restaurant.findById(restaurantId);
+          
+          if (!restaurant || !restaurant.isActive || !restaurant.isVerified) {
+            return NextResponse.json(
+              { success: false, message: 'Restaurant is not available' },
+              { status: 400 }
+            );
+          }
+
+          cart.restaurant = restaurant._id;
+          cart.restaurantName = restaurant.name;
+          cart.deliveryFee = restaurant.deliveryFee || 2.50;
+          cart.minimumOrderAmount = restaurant.minimumOrderAmount || 0;
+
+          for (const item of items) {
+            await cart.addItem({
+              menuItem: item._id,
+              restaurant: restaurant._id,
+              name: item.name,
+              description: item.description,
+              price: item.price,
+              quantity: item.quantity,
+              image: item.imageUrl || item.image || item.img,
+              category: item.category,
+              customizations: item.customizations || [],
+              specialInstructions: item.specialInstructions || '',
+              isAvailable: true,
+              preparationTime: item.preparationTime || 15
+            });
+          }
+          
+          // Apply discount and coupon if provided
+          if (syncDiscount && syncDiscount > 0 && syncCouponCode) {
+            await cart.applyCoupon(syncCouponCode, syncDiscount);
+          }
+        }
+
+        await cart.save();
+        
+        return NextResponse.json({
+          success: true,
+          message: 'Cart synced successfully',
           data: {
             cart,
             summary: cart.getSummary()
@@ -321,7 +403,15 @@ export async function DELETE(request) {
       );
     }
 
-    await cart.clearCart();
+    try {
+      await cart.clearCart();
+    } catch (clearError) {
+      console.error('Error clearing cart in DELETE:', clearError);
+      return NextResponse.json(
+        { success: false, message: 'Failed to clear cart' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
