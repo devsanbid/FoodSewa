@@ -1,15 +1,20 @@
 "use client"
 
-import React, { useState } from 'react';
+'use client';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Settings, Bell, Shield, Globe, CreditCard, User, Moon, Sun, 
   Smartphone, Mail, Volume2, VolumeX, Eye, EyeOff, Lock, 
   MapPin, Clock, Trash2, Download, Upload, LogOut, HelpCircle,
   ChevronRight, ToggleLeft, ToggleRight, Monitor, Palette
 } from 'lucide-react';
+import { getCurrentUser } from '@/actions/authActions';
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState('general');
+  const [loading, setLoading] = useState(true);
+  const [userData, setUserData] = useState(null);
   const [settings, setSettings] = useState({
     // General Settings
     theme: 'dark',
@@ -45,6 +50,35 @@ export default function SettingsPage() {
     reducedMotion: false,
     highContrast: false
   });
+  const router = useRouter();
+  
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (!user || user.role !== 'user') {
+          router.push('/login');
+          return;
+        }
+        setUserData(user);
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        router.push('/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
 
   const updateSetting = (key, value) => {
     setSettings(prev => ({ ...prev, [key]: value }));
