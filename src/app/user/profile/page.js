@@ -1,11 +1,17 @@
 "use client"
 
-import React, { useState } from 'react';
+'use client';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { User, Mail, Phone, MapPin, Calendar, Edit3, Save, X, Camera, Bell, Shield, CreditCard, Heart, Clock, Settings } from 'lucide-react';
+import { getCurrentUser } from '@/actions/authActions';
 
 export default function UserProfile() {
   const [isEditing, setIsEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState('profile');
+  const [loading, setLoading] = useState(true);
+  const [userData, setUserData] = useState(null);
+  const router = useRouter();
+  
   const [profileData, setProfileData] = useState({
     name: 'John Smith',
     email: 'john.smith@example.com',
@@ -16,6 +22,48 @@ export default function UserProfile() {
   });
 
   const [tempData, setTempData] = useState({ ...profileData });
+  
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (!user || user.role !== 'user') {
+          router.push('/login');
+          return;
+        }
+        setUserData(user);
+        
+        // Update profile data with user information if available
+        if (user.username) {
+          setProfileData(prevData => ({
+            ...prevData,
+            name: user.username,
+            email: user.email || prevData.email
+          }));
+          setTempData(prevData => ({
+            ...prevData,
+            name: user.username,
+            email: user.email || prevData.email
+          }));
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        router.push('/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -36,25 +84,7 @@ export default function UserProfile() {
     setTempData(prev => ({ ...prev, [field]: value }));
   };
 
-  const tabItems = [
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'orders', label: 'Order History', icon: Clock },
-    { id: 'favorites', label: 'Favorites', icon: Heart },
-    { id: 'payment', label: 'Payment Methods', icon: CreditCard },
-    { id: 'settings', label: 'Settings', icon: Settings }
-  ];
 
-  const orderHistory = [
-    { id: '#12345', restaurant: 'Pizza Palace', date: '2024-06-15', total: '$24.50', status: 'Delivered' },
-    { id: '#12344', restaurant: 'Burger Barn', date: '2024-06-12', total: '$18.75', status: 'Delivered' },
-    { id: '#12343', restaurant: 'Sushi Spot', date: '2024-06-10', total: '$32.25', status: 'Delivered' }
-  ];
-
-  const favoriteRestaurants = [
-    { name: 'Pizza Palace', cuisine: 'Italian', rating: 4.8 },
-    { name: 'Taco Time', cuisine: 'Mexican', rating: 4.6 },
-    { name: 'Dragon Garden', cuisine: 'Chinese', rating: 4.7 }
-  ];
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
@@ -82,82 +112,56 @@ export default function UserProfile() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-slate-800 rounded-lg p-6 sticky top-8">
-              {/* Profile Image */}
-              <div className="text-center mb-6">
-                <div className="relative inline-block">
-                  <div className="w-24 h-24 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-2xl font-bold">
-                    {profileData.name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <button className="absolute bottom-0 right-0 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors">
-                    <Camera className="w-4 h-4" />
-                  </button>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-slate-800 rounded-lg">
+          {/* Profile Header */}
+          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-t-lg p-8">
+            <div className="flex items-center space-x-6">
+              <div className="relative">
+                <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-2xl font-bold text-white">
+                  {profileData.name.split(' ').map(n => n[0]).join('')}
                 </div>
-                <h2 className="text-xl font-semibold mt-4">{profileData.name}</h2>
-                <p className="text-slate-400 text-sm">Member since {profileData.joinDate}</p>
+                <button className="absolute bottom-0 right-0 w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-colors">
+                  <Camera className="w-4 h-4 text-white" />
+                </button>
               </div>
-
-              {/* Navigation */}
-              <nav className="space-y-2">
-                {tabItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                        activeTab === item.id
-                          ? 'bg-orange-500 text-white'
-                          : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                      }`}
-                    >
-                      <Icon className="w-5 h-5" />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
+              <div>
+                <h2 className="text-3xl font-bold text-white">{profileData.name}</h2>
+                <p className="text-white/80 text-lg">Member since {profileData.joinDate}</p>
+              </div>
             </div>
           </div>
 
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            <div className="bg-slate-800 rounded-lg">
-              {/* Profile Tab */}
-              {activeTab === 'profile' && (
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-2xl font-semibold">Profile Information</h3>
-                    {!isEditing ? (
-                      <button
-                        onClick={handleEdit}
-                        className="flex items-center space-x-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-lg transition-colors"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                        <span>Edit Profile</span>
-                      </button>
-                    ) : (
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={handleSave}
-                          className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
-                        >
-                          <Save className="w-4 h-4" />
-                          <span>Save</span>
-                        </button>
-                        <button
-                          onClick={handleCancel}
-                          className="flex items-center space-x-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 rounded-lg transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                          <span>Cancel</span>
-                        </button>
-                      </div>
-                    )}
+          {/* Profile Content */}
+           <div className="p-8">
+             <div className="flex items-center justify-between mb-6">
+               <h3 className="text-2xl font-semibold">Profile Information</h3>
+               {!isEditing ? (
+                 <button
+                   onClick={handleEdit}
+                   className="flex items-center space-x-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-lg transition-colors"
+                 >
+                   <Edit3 className="w-4 h-4" />
+                   <span>Edit Profile</span>
+                 </button>
+               ) : (
+                 <div className="flex space-x-2">
+                   <button
+                     onClick={handleSave}
+                     className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                   >
+                     <Save className="w-4 h-4" />
+                     <span>Save</span>
+                   </button>
+                   <button
+                     onClick={handleCancel}
+                     className="flex items-center space-x-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 rounded-lg transition-colors"
+                   >
+                     <X className="w-4 h-4" />
+                     <span>Cancel</span>
+                   </button>
+                 </div>
+               )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -254,121 +258,8 @@ export default function UserProfile() {
                     </div>
                   </div>
                 </div>
-              )}
-
-              {/* Order History Tab */}
-              {activeTab === 'orders' && (
-                <div className="p-6">
-                  <h3 className="text-2xl font-semibold mb-6">Order History</h3>
-                  <div className="space-y-4">
-                    {orderHistory.map((order) => (
-                      <div key={order.id} className="bg-slate-700 rounded-lg p-4 hover:bg-slate-650 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-semibold">{order.restaurant}</p>
-                            <p className="text-slate-400 text-sm">Order {order.id} • {order.date}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-orange-400">{order.total}</p>
-                            <span className="inline-block px-2 py-1 bg-green-600 text-green-100 text-xs rounded-full">
-                              {order.status}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Favorites Tab */}
-              {activeTab === 'favorites' && (
-                <div className="p-6">
-                  <h3 className="text-2xl font-semibold mb-6">Favorite Restaurants</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {favoriteRestaurants.map((restaurant, index) => (
-                      <div key={index} className="bg-slate-700 rounded-lg p-4 hover:bg-slate-650 transition-colors cursor-pointer">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold">{restaurant.name}</h4>
-                          <Heart className="w-5 h-5 text-red-500 fill-current" />
-                        </div>
-                        <p className="text-slate-400 text-sm mb-2">{restaurant.cuisine}</p>
-                        <div className="flex items-center">
-                          <span className="text-orange-400">★</span>
-                          <span className="ml-1 text-sm">{restaurant.rating}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Payment Methods Tab */}
-              {activeTab === 'payment' && (
-                <div className="p-6">
-                  <h3 className="text-2xl font-semibold mb-6">Payment Methods</h3>
-                  <div className="space-y-4">
-                    <div className="bg-slate-700 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <CreditCard className="w-6 h-6 text-blue-400" />
-                          <div>
-                            <p className="font-semibold">•••• •••• •••• 1234</p>
-                            <p className="text-slate-400 text-sm">Expires 12/26</p>
-                          </div>
-                        </div>
-                        <span className="px-2 py-1 bg-green-600 text-green-100 text-xs rounded-full">Primary</span>
-                      </div>
-                    </div>
-                    <button className="w-full py-3 border-2 border-dashed border-slate-600 rounded-lg hover:border-orange-500 transition-colors text-slate-400 hover:text-orange-400">
-                      + Add New Payment Method
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Settings Tab */}
-              {activeTab === 'settings' && (
-                <div className="p-6">
-                  <h3 className="text-2xl font-semibold mb-6">Settings</h3>
-                  <div className="space-y-6">
-                    <div className="bg-slate-700 rounded-lg p-4">
-                      <h4 className="font-semibold mb-4">Notifications</h4>
-                      <div className="space-y-3">
-                        <label className="flex items-center justify-between">
-                          <span>Email notifications</span>
-                          <input type="checkbox" defaultChecked className="toggle" />
-                        </label>
-                        <label className="flex items-center justify-between">
-                          <span>Push notifications</span>
-                          <input type="checkbox" defaultChecked className="toggle" />
-                        </label>
-                        <label className="flex items-center justify-between">
-                          <span>Order updates</span>
-                          <input type="checkbox" defaultChecked className="toggle" />
-                        </label>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-slate-700 rounded-lg p-4">
-                      <h4 className="font-semibold mb-4">Privacy & Security</h4>
-                      <div className="space-y-3">
-                        <button className="w-full text-left px-4 py-2 hover:bg-slate-600 rounded-lg transition-colors">
-                          <Shield className="w-4 h-4 inline mr-2" />
-                          Change Password
-                        </button>
-                        <button className="w-full text-left px-4 py-2 hover:bg-slate-600 rounded-lg transition-colors">
-                          Enable Two-Factor Authentication
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-  );
+        );
 }
