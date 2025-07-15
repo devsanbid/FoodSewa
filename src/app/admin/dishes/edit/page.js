@@ -1,481 +1,579 @@
 "use client"
 
-import React, { useState } from 'react';
+'use client';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { 
-  Search, 
-  Globe, 
-  Maximize2, 
-  Bell, 
-  ChevronDown, 
-  Plus, 
-  Users, 
-  Wallet, 
-  FileText, 
-  Shield, 
-  AlertTriangle, 
-  Layers, 
-  Calendar, 
-  Shapes, 
-  Zap, 
-  User, 
-  LogOut,
+  ArrowLeft,
   Upload,
-  Bold,
-  Italic,
-  Underline,
-  Link,
-  AlignLeft,
-  AlignCenter,
-  Hash
+  X,
+  Save
 } from 'lucide-react';
+import { getCurrentUser } from '@/actions/authActions';
 
-export default function YumAdminInterface() {
-  const [productName, setProductName] = useState('Burrito Bowl');
-  const [description, setDescription] = useState('Mexican burritos are usually made with a wheat tortilla and contain grilled meat, cheese toppings, and fresh vegetables which are sources of vitamins, proteins, fiber...');
-  const [longDescription, setLongDescription] = useState('Mexican burritos are usually made with a wheat tortilla and contain grilled meat, cheese toppings');
-  const [sellingPrice, setSellingPrice] = useState('45');
-  const [costPrice, setCostPrice] = useState('35');
-  const [quantity, setQuantity] = useState('80');
-  const [saleStartDate, setSaleStartDate] = useState('12/9/2022');
-  const [saleEndDate, setSaleEndDate] = useState('12/10/2022');
-  const [discountEnabled, setDiscountEnabled] = useState(false);
-  const [expiryDateEnabled, setExpiryDateEnabled] = useState(false);
-  const [returnableEnabled, setReturnableEnabled] = useState(true);
+export default function EditDish() {
+  const router = useRouter();
+  const params = useParams();
+  const dishId = params.id;
+  
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [user, setUser] = useState(null);
+  const [restaurants, setRestaurants] = useState([]);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    category: '',
+    price: '',
+    restaurant: '',
+    image: '',
+    ingredients: [],
+    allergens: [],
+    nutritionalInfo: {
+      calories: '',
+      protein: '',
+      carbs: '',
+      fat: ''
+    },
+    isVegetarian: false,
+    isVegan: false,
+    isGlutenFree: false,
+    spiceLevel: 'mild',
+    preparationTime: '',
+    status: 'active'
+  });
+
+  // Check authentication
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  // Fetch dish data and restaurants
+  useEffect(() => {
+    if (user && dishId) {
+      fetchDishData();
+      fetchRestaurants();
+    }
+  }, [user, dishId]);
+
+  const checkAuth = async () => {
+    try {
+      const userData = await getCurrentUser();
+      if (!userData || userData.role !== 'admin') {
+        router.push('/auth/login');
+        return;
+      }
+      setUser(userData);
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      router.push('/auth/login');
+    }
+  };
+
+  const fetchDishData = async () => {
+    try {
+  
+      const response = await fetch(`/api/admin/dishes/${dishId}`, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const dish = await response.json();
+        setFormData({
+          name: dish.name || '',
+          description: dish.description || '',
+          category: dish.category || '',
+          price: dish.price?.toString() || '',
+          restaurant: dish.restaurant?._id || dish.restaurant || '',
+          image: dish.image || '',
+          ingredients: dish.ingredients || [],
+          allergens: dish.allergens || [],
+          nutritionalInfo: dish.nutritionalInfo || {
+            calories: '',
+            protein: '',
+            carbs: '',
+            fat: ''
+          },
+          isVegetarian: dish.isVegetarian || false,
+          isVegan: dish.isVegan || false,
+          isGlutenFree: dish.isGlutenFree || false,
+          spiceLevel: dish.spiceLevel || 'mild',
+          preparationTime: dish.preparationTime?.toString() || '',
+          status: dish.status || 'active'
+        });
+        if (dish.image) {
+          setImagePreview(dish.image);
+        }
+      } else {
+        console.error('Failed to fetch dish data');
+        router.push('/admin/dishes/list');
+      }
+    } catch (error) {
+      console.error('Error fetching dish:', error);
+      router.push('/admin/dishes/list');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRestaurants = async () => {
+    try {
+      const response = await fetch('/api/admin/restaurants', {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setRestaurants(data);
+      }
+    } catch (error) {
+      console.error('Error fetching restaurants:', error);
+    }
+  };
+
+  const handleInputChange = (field, value) => {
+    if (field.includes('.')) {
+      const [parent, child] = field.split('.');
+      setFormData(prev => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent],
+          [child]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  const handleArrayInput = (field, value) => {
+    const arrayValue = value.split(',').map(item => item.trim()).filter(item => item);
+    setFormData(prev => ({ ...prev, [field]: arrayValue }));
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setFormData(prev => ({ ...prev, image: '' }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      let imageUrl = formData.image;
+      
+      // Upload new image if selected
+      if (imageFile) {
+        const imageFormData = new FormData();
+        imageFormData.append('image', imageFile);
+        
+        const imageResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: imageFormData
+        });
+        
+        if (imageResponse.ok) {
+          const imageData = await imageResponse.json();
+          imageUrl = imageData.url;
+        }
+      }
+
+      // Update dish
+      const response = await fetch(`/api/admin/dishes/${dishId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          ...formData,
+          image: imageUrl,
+          price: parseFloat(formData.price),
+          preparationTime: formData.preparationTime ? parseInt(formData.preparationTime) : null
+        })
+      });
+
+      if (response.ok) {
+        router.push('/admin/dishes/list');
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to update dish:', errorData.message);
+      }
+    } catch (error) {
+      console.error('Error updating dish:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p>Loading dish data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-screen bg-gray-900 text-white">
-      {/* Sidebar */}
-      <div className="w-64 bg-gray-800 border-r border-gray-700">
-        {/* Logo */}
-        <div className="flex items-center px-6 py-4 border-b border-gray-700">
-          <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center mr-3">
-            <span className="text-white font-bold">Y</span>
-          </div>
-          <span className="text-xl font-bold">Yum</span>
-        </div>
-
-        {/* Navigation */}
-        <nav className="mt-6">
-          <div className="px-6 py-2">
-            <div className="flex items-center text-gray-300 hover:text-white cursor-pointer">
-              <Plus className="w-5 h-5 mr-3" />
-              <span>Add Dish</span>
+    <div className="min-h-screen bg-slate-900 text-white">
+      {/* Page Header */}
+      <div className="bg-slate-800 border-b border-slate-700 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => router.push('/admin/dishes/list')}
+              className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Back to Dishes</span>
+            </button>
+            <div className="h-6 w-px bg-slate-600"></div>
+            <div>
+              <h1 className="text-xl font-semibold">Edit Dish</h1>
+              <p className="text-sm text-slate-400">Update dish information and details</p>
             </div>
-          </div>
-          
-          <div className="px-6 py-2 bg-orange-500 bg-opacity-20 border-r-2 border-orange-500">
-            <div className="flex items-center text-orange-500 cursor-pointer">
-              <span className="w-5 h-5 mr-3 text-orange-500">•</span>
-              <span>Edit Dish</span>
-            </div>
-          </div>
-
-          <div className="px-6 py-2 mt-4">
-            <div className="flex items-center justify-between text-gray-300 hover:text-white cursor-pointer">
-              <div className="flex items-center">
-                <Users className="w-5 h-5 mr-3" />
-                <span>Sellers</span>
-              </div>
-              <ChevronDown className="w-4 h-4" />
-            </div>
-          </div>
-
-          <div className="px-6 py-2">
-            <div className="flex items-center text-gray-300 hover:text-white cursor-pointer">
-              <Wallet className="w-5 h-5 mr-3" />
-              <span>Wallet</span>
-            </div>
-          </div>
-
-          <div className="px-6 py-2">
-            <div className="flex items-center justify-between text-gray-300 hover:text-white cursor-pointer">
-              <div className="flex items-center">
-                <FileText className="w-5 h-5 mr-3" />
-                <span>Extra Pages</span>
-              </div>
-              <ChevronDown className="w-4 h-4" />
-            </div>
-          </div>
-
-          <div className="px-6 py-2">
-            <div className="flex items-center justify-between text-gray-300 hover:text-white cursor-pointer">
-              <div className="flex items-center">
-                <Shield className="w-5 h-5 mr-3" />
-                <span>Authentication</span>
-              </div>
-              <ChevronDown className="w-4 h-4" />
-            </div>
-          </div>
-
-          <div className="px-6 py-2">
-            <div className="flex items-center justify-between text-gray-300 hover:text-white cursor-pointer">
-              <div className="flex items-center">
-                <AlertTriangle className="w-5 h-5 mr-3" />
-                <span>Error Pages</span>
-              </div>
-              <ChevronDown className="w-4 h-4" />
-            </div>
-          </div>
-
-          <div className="px-6 py-2">
-            <div className="flex items-center text-gray-300 hover:text-white cursor-pointer">
-              <Layers className="w-5 h-5 mr-3" />
-              <span>UI Elements</span>
-            </div>
-          </div>
-
-          <div className="px-6 py-2">
-            <div className="flex items-center text-gray-300 hover:text-white cursor-pointer">
-              <Calendar className="w-5 h-5 mr-3" />
-              <span>Widget</span>
-            </div>
-          </div>
-
-          <div className="px-6 py-2">
-            <div className="flex items-center justify-between text-gray-300 hover:text-white cursor-pointer">
-              <div className="flex items-center">
-                <Shapes className="w-5 h-5 mr-3" />
-                <span>Icons</span>
-              </div>
-              <ChevronDown className="w-4 h-4" />
-            </div>
-          </div>
-
-          <div className="px-6 py-2">
-            <div className="flex items-center justify-between text-gray-300 hover:text-white cursor-pointer">
-              <div className="flex items-center">
-                <FileText className="w-5 h-5 mr-3" />
-                <span>Forms</span>
-              </div>
-              <ChevronDown className="w-4 h-4" />
-            </div>
-          </div>
-        </nav>
-
-        {/* Upgrade Section */}
-        <div className="mt-auto p-6">
-          <div className="flex items-center mb-4">
-            <Zap className="w-5 h-5 text-orange-500 mr-2" />
-          </div>
-          <div className="text-sm text-gray-400 mb-4">
-            🔥 Upgrade Your Plan. Find Out here
-          </div>
-          <div className="text-orange-500 text-sm cursor-pointer">
-            Contact Support
-          </div>
-        </div>
-
-        {/* Profile Section */}
-        <div className="border-t border-gray-700 p-4">
-          <div className="flex items-center text-gray-300 hover:text-white cursor-pointer mb-2">
-            <User className="w-5 h-5 mr-3" />
-            <span>Profile</span>
-          </div>
-          <div className="flex items-center text-gray-300 hover:text-white cursor-pointer">
-            <LogOut className="w-5 h-5 mr-3" />
-            <span>Logout</span>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center flex-1 max-w-md">
-              <Search className="w-5 h-5 text-gray-400 mr-3" />
-              <input
-                type="text"
-                placeholder="Search for items..."
-                className="bg-transparent text-white placeholder-gray-400 w-full focus:outline-none"
+      {/* Form Content */}
+      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-6">
+        <div className="space-y-8">
+          {/* Image Upload Section */}
+          <div className="bg-slate-800 rounded-lg p-6">
+            <h3 className="text-lg font-semibold mb-4">Dish Image</h3>
+            <div className="flex items-start space-x-6">
+              <div className="flex-shrink-0">
+                {imagePreview ? (
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Dish preview"
+                      className="w-32 h-32 object-cover rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-32 h-32 border-2 border-dashed border-slate-600 rounded-lg flex items-center justify-center">
+                    <Upload className="w-8 h-8 text-slate-400" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                  id="image-upload"
+                />
+                <label
+                  htmlFor="image-upload"
+                  className="inline-flex items-center px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg cursor-pointer transition-colors"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {imagePreview ? 'Change Image' : 'Upload Image'}
+                </label>
+                <p className="text-sm text-slate-400 mt-2">
+                  Upload a high-quality image of the dish. Recommended size: 800x600px
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Basic Information */}
+          <div className="bg-slate-800 rounded-lg p-6">
+            <h3 className="text-lg font-semibold mb-4">Basic Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium mb-2">Dish Name *</label>
+                <input
+                  type="text"
+                  placeholder="Enter dish name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Restaurant *</label>
+                <select
+                  value={formData.restaurant}
+                  onChange={(e) => handleInputChange('restaurant', e.target.value)}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  required
+                >
+                  <option value="">Select Restaurant</option>
+                  {restaurants.map((restaurant) => (
+                    <option key={restaurant._id} value={restaurant._id}>
+                      {restaurant.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Category *</label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => handleInputChange('category', e.target.value)}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  required
+                >
+                  <option value="">Select Category</option>
+                  <option value="appetizer">Appetizer</option>
+                  <option value="main-course">Main Course</option>
+                  <option value="dessert">Dessert</option>
+                  <option value="beverage">Beverage</option>
+                  <option value="snack">Snack</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Price *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={formData.price}
+                  onChange={(e) => handleInputChange('price', e.target.value)}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Preparation Time (minutes)</label>
+                <input
+                  type="number"
+                  placeholder="15"
+                  value={formData.preparationTime}
+                  onChange={(e) => handleInputChange('preparationTime', e.target.value)}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Spice Level</label>
+                <select
+                  value={formData.spiceLevel}
+                  onChange={(e) => handleInputChange('spiceLevel', e.target.value)}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="mild">Mild</option>
+                  <option value="medium">Medium</option>
+                  <option value="hot">Hot</option>
+                  <option value="very-hot">Very Hot</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <label className="block text-sm font-medium mb-2">Description</label>
+              <textarea
+                placeholder="Enter dish description..."
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                rows={4}
+                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
+          </div>
+
+          {/* Additional Information */}
+          <div className="bg-slate-800 rounded-lg p-6">
+            <h3 className="text-lg font-semibold mb-4">Additional Information</h3>
             
-            <div className="flex items-center space-x-4">
-              <Globe className="w-5 h-5 text-gray-400 cursor-pointer" />
-              <Maximize2 className="w-5 h-5 text-gray-400 cursor-pointer" />
-              <div className="relative">
-                <Bell className="w-5 h-5 text-gray-400 cursor-pointer" />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full flex items-center justify-center">
-                  <span className="text-xs text-white">2</span>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium mb-2">Ingredients (comma separated)</label>
+                <input
+                  type="text"
+                  placeholder="tomato, cheese, basil..."
+                  value={formData.ingredients.join(', ')}
+                  onChange={(e) => handleArrayInput('ingredients', e.target.value)}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
               </div>
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-gray-600 rounded-full mr-2"></div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Allergens (comma separated)</label>
+                <input
+                  type="text"
+                  placeholder="nuts, dairy, gluten..."
+                  value={formData.allergens.join(', ')}
+                  onChange={(e) => handleArrayInput('allergens', e.target.value)}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+            </div>
+
+            {/* Dietary Options */}
+            <div className="mt-6">
+              <h4 className="text-md font-medium mb-3">Dietary Options</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={formData.isVegetarian}
+                    onChange={(e) => handleInputChange('isVegetarian', e.target.checked)}
+                    className="w-4 h-4 text-orange-500 bg-slate-700 border-slate-600 rounded focus:ring-orange-500"
+                  />
+                  <span>Vegetarian</span>
+                </label>
+                
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={formData.isVegan}
+                    onChange={(e) => handleInputChange('isVegan', e.target.checked)}
+                    className="w-4 h-4 text-orange-500 bg-slate-700 border-slate-600 rounded focus:ring-orange-500"
+                  />
+                  <span>Vegan</span>
+                </label>
+                
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={formData.isGlutenFree}
+                    onChange={(e) => handleInputChange('isGlutenFree', e.target.checked)}
+                    className="w-4 h-4 text-orange-500 bg-slate-700 border-slate-600 rounded focus:ring-orange-500"
+                  />
+                  <span>Gluten Free</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Nutritional Information */}
+            <div className="mt-6">
+              <h4 className="text-md font-medium mb-3">Nutritional Information (per serving)</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <div className="text-sm font-medium">Kalya Botosh</div>
-                  <div className="text-xs text-gray-400">Admin</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Breadcrumb */}
-        <div className="px-6 py-4 border-b border-gray-700">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold">Edit Dish</h1>
-            <div className="flex items-center text-sm text-gray-400">
-              <span>Dishes</span>
-              <span className="mx-2">›</span>
-              <span className="text-orange-500">Edit Dish</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Form Content */}
-        <div className="flex-1 p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Image */}
-            <div className="lg:col-span-1">
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                <div className="w-full h-48 bg-gray-700 rounded-lg flex items-center justify-center mb-6">
-                  <img 
-                    src="/api/placeholder/200/150" 
-                    alt="Burrito Bowl"
-                    className="w-full h-full object-cover rounded-lg"
+                  <label className="block text-sm font-medium mb-1">Calories</label>
+                  <input
+                    type="number"
+                    placeholder="250"
+                    value={formData.nutritionalInfo.calories}
+                    onChange={(e) => handleInputChange('nutritionalInfo.calories', e.target.value)}
+                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
                 
                 <div>
-                  <h3 className="text-lg font-medium mb-4">Additional Images</h3>
-                  <div className="border-2 border-dashed border-orange-500 rounded-lg p-8 text-center">
-                    <Upload className="w-8 h-8 text-orange-500 mx-auto mb-2" />
-                    <div className="text-orange-500">Upload Image</div>
-                  </div>
+                  <label className="block text-sm font-medium mb-1">Protein (g)</label>
+                  <input
+                    type="number"
+                    placeholder="15"
+                    value={formData.nutritionalInfo.protein}
+                    onChange={(e) => handleInputChange('nutritionalInfo.protein', e.target.value)}
+                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Carbs (g)</label>
+                  <input
+                    type="number"
+                    placeholder="30"
+                    value={formData.nutritionalInfo.carbs}
+                    onChange={(e) => handleInputChange('nutritionalInfo.carbs', e.target.value)}
+                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Fat (g)</label>
+                  <input
+                    type="number"
+                    placeholder="10"
+                    value={formData.nutritionalInfo.fat}
+                    onChange={(e) => handleInputChange('nutritionalInfo.fat', e.target.value)}
+                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Right Column - Form */}
-            <div className="lg:col-span-2">
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Product Name */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Product Name</label>
-                    <input
-                      type="text"
-                      value={productName}
-                      onChange={(e) => setProductName(e.target.value)}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500"
-                    />
-                  </div>
-
-                  {/* Description */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Description</label>
-                    <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      rows={3}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500 resize-none"
-                    />
-                  </div>
-
-                  {/* Product Category */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Product Category</label>
-                    <select className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500">
-                      <option>Select...</option>
-                    </select>
-                  </div>
-
-                  {/* Product Long Description */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Product Long Description</label>
-                    <div className="bg-gray-700 border border-gray-600 rounded-lg">
-                      <div className="flex items-center space-x-2 p-2 border-b border-gray-600">
-                        <select className="bg-gray-600 text-white text-sm px-2 py-1 rounded border-none">
-                          <option>Normal</option>
-                        </select>
-                        <Bold className="w-4 h-4 text-gray-400 cursor-pointer" />
-                        <Italic className="w-4 h-4 text-gray-400 cursor-pointer" />
-                        <Underline className="w-4 h-4 text-gray-400 cursor-pointer" />
-                        <Link className="w-4 h-4 text-gray-400 cursor-pointer" />
-                        <AlignLeft className="w-4 h-4 text-gray-400 cursor-pointer" />
-                        <AlignCenter className="w-4 h-4 text-gray-400 cursor-pointer" />
-                        <Hash className="w-4 h-4 text-gray-400 cursor-pointer" />
-                      </div>
-                      <textarea
-                        value={longDescription}
-                        onChange={(e) => setLongDescription(e.target.value)}
-                        rows={3}
-                        className="w-full bg-transparent px-3 py-2 text-white focus:outline-none resize-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Selling Price */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Selling Price</label>
-                    <input
-                      type="text"
-                      value={sellingPrice}
-                      onChange={(e) => setSellingPrice(e.target.value)}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500"
-                    />
-                  </div>
-
-                  {/* Cost Price */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Cost Price</label>
-                    <input
-                      type="text"
-                      value={costPrice}
-                      onChange={(e) => setCostPrice(e.target.value)}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500"
-                    />
-                  </div>
-
-                  {/* Quantity */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Quantity</label>
-                    <input
-                      type="text"
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500"
-                    />
-                  </div>
-
-                  {/* Delivery Type */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Delivery Type</label>
-                    <select className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500">
-                      <option>Select...</option>
-                    </select>
-                  </div>
-
-                  {/* Return Policy */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Return Policy</span>
-                    <div className="flex items-center">
-                      <span className="text-sm mr-2">Returnable</span>
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          checked={returnableEnabled}
-                          onChange={(e) => setReturnableEnabled(e.target.checked)}
-                          className="sr-only"
-                        />
-                        <div
-                          className={`w-11 h-6 rounded-full cursor-pointer transition-colors ${
-                            returnableEnabled ? 'bg-orange-500' : 'bg-gray-600'
-                          }`}
-                          onClick={() => setReturnableEnabled(!returnableEnabled)}
-                        >
-                          <div
-                            className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${
-                              returnableEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                            } mt-0.5`}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Discount */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Discount</span>
-                    <div className="flex items-center">
-                      <span className="text-sm mr-2">Add Discount</span>
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          checked={discountEnabled}
-                          onChange={(e) => setDiscountEnabled(e.target.checked)}
-                          className="sr-only"
-                        />
-                        <div
-                          className={`w-11 h-6 rounded-full cursor-pointer transition-colors ${
-                            discountEnabled ? 'bg-orange-500' : 'bg-gray-600'
-                          }`}
-                          onClick={() => setDiscountEnabled(!discountEnabled)}
-                        >
-                          <div
-                            className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${
-                              discountEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                            } mt-0.5`}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Expiry Date */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Expiry Date</span>
-                    <div className="flex items-center">
-                      <span className="text-sm mr-2">Add Expiry Date</span>
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          checked={expiryDateEnabled}
-                          onChange={(e) => setExpiryDateEnabled(e.target.checked)}
-                          className="sr-only"
-                        />
-                        <div
-                          className={`w-11 h-6 rounded-full cursor-pointer transition-colors ${
-                            expiryDateEnabled ? 'bg-orange-500' : 'bg-gray-600'
-                          }`}
-                          onClick={() => setExpiryDateEnabled(!expiryDateEnabled)}
-                        >
-                          <div
-                            className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${
-                              expiryDateEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                            } mt-0.5`}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Sale Start Date */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Sale Start On</label>
-                    <input
-                      type="text"
-                      value={saleStartDate}
-                      onChange={(e) => setSaleStartDate(e.target.value)}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500"
-                    />
-                  </div>
-
-                  {/* Sale End Date */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Sale End On</label>
-                    <input
-                      type="text"
-                      value={saleEndDate}
-                      onChange={(e) => setSaleEndDate(e.target.value)}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500"
-                    />
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex justify-end space-x-4 mt-8">
-                  <button className="px-6 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors">
-                    Cancel
-                  </button>
-                  <button className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
-                    Save
-                  </button>
-                </div>
-              </div>
+            {/* Status */}
+            <div className="mt-6">
+              <label className="block text-sm font-medium mb-2">Status</label>
+              <select
+                value={formData.status}
+                onChange={(e) => handleInputChange('status', e.target.value)}
+                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="pending">Pending</option>
+              </select>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <footer className="bg-gray-800 border-t border-gray-700 px-6 py-3">
-          <div className="text-center text-sm text-gray-400">
-            Designed, crafted and coded with ❤️ by Coderthemes.com
-          </div>
-        </footer>
-      </div>
+        {/* Form Actions */}
+        <div className="flex items-center justify-end space-x-4 pt-6 border-t border-slate-700 mt-8">
+          <button
+            type="button"
+            onClick={() => router.push('/admin/dishes/list')}
+            className="px-6 py-2 border border-slate-600 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg flex items-center space-x-2 transition-colors disabled:opacity-50"
+          >
+            {saving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Updating...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Update Dish</span>
+              </>
+            )}
+          </button>
+        </div>
+      </form>
     </div>
+
   );
-}
+};
+
