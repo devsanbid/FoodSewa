@@ -17,10 +17,9 @@ const menuItemSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    required: [true, 'Category is required'],
-    enum: ['appetizer', 'main', 'dessert', 'beverage', 'side']
+    required: [true, 'Category is required']
   },
-  image: {
+  imageUrl: {
     type: String,
     default: '/images/default-food.jpg'
   },
@@ -127,6 +126,14 @@ const restaurantSchema = new mongoose.Schema({
   logo: {
     type: String,
     default: '/images/default-restaurant.jpg'
+  },
+  profileImage: {
+    type: String,
+    default: '/images/default-restaurant.jpg'
+  },
+  bannerImage: {
+    type: String,
+    default: '/default-restaurant-banner.jpg'
   },
   rating: {
     average: {
@@ -245,7 +252,8 @@ restaurantSchema.virtual('fullAddress').get(function() {
 // Method to check if restaurant is currently open
 restaurantSchema.methods.isCurrentlyOpen = function() {
   const now = new Date();
-  const currentDay = now.toLocaleLowerCase().substring(0, 3); // mon, tue, etc.
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const currentDay = dayNames[now.getDay()];
   const currentTime = now.toTimeString().substring(0, 5); // HH:MM format
   
   const daySchedule = this.operatingHours[currentDay];
