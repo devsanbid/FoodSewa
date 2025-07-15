@@ -1,329 +1,614 @@
 "use client"
-import React, { useState } from 'react';
+'use client';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { getCurrentUser } from '@/actions/authActions';
 import { 
-  Search, 
-  Globe, 
-  Maximize, 
-  Bell, 
-  ChevronDown, 
-  ChevronRight,
   ArrowLeft,
   Truck,
-  BarChart3,
-  Users,
-  ShoppingBag,
-  FileText,
+  Package,
+  Clock,
+  CheckCircle,
+  X,
+  Edit,
+  Save,
+  AlertCircle,
+  MapPin,
+  Phone,
+  Mail,
+  CreditCard,
+  Calendar,
   User,
-  Store,
-  Utensils,
-  UserCheck,
-  Wallet,
-  FileImage,
-  Shield,
-  AlertTriangle,
-  Palette,
-  HelpCircle,
-  BarChart,
-  Table,
-  Map,
-  Settings,
-  LogOut
+  Store
 } from 'lucide-react';
 
 const OrderDetailsPage = () => {
-  const [activeStep, setActiveStep] = useState(2);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const orderId = searchParams.get('id');
+  
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedStatus, setEditedStatus] = useState('');
 
-  const sidebarItems = [
-    { icon: BarChart3, label: 'Dashboard', active: false },
-    { icon: Settings, label: 'Manage', active: false },
-    { icon: ShoppingBag, label: 'Orders', active: true, hasSubmenu: true },
-    { icon: Users, label: 'Customers', active: false },
-    { icon: Store, label: 'Restaurants', active: false },
-    { icon: Utensils, label: 'Dishes', active: false },
-    { icon: UserCheck, label: 'Sellers', active: false },
-    { icon: Wallet, label: 'Wallet', active: false },
-    { icon: FileImage, label: 'Extra Pages', active: false },
-    { icon: Shield, label: 'Authentication', active: false },
-    { icon: AlertTriangle, label: 'Error Pages', active: false },
-    { icon: Palette, label: 'UI Elements', active: false },
-    { icon: HelpCircle, label: 'Widget', active: false },
-    { icon: Settings, label: 'Icons', active: false },
-    { icon: FileText, label: 'Forms', active: false },
-    { icon: BarChart, label: 'Apex Charts', active: false },
-    { icon: Table, label: 'Tables', active: false },
-    { icon: Map, label: 'Maps', active: false }
-  ];
+  // Authentication check
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
-  const orderItems = [
-    {
-      id: 1,
-      name: 'Italian Pizza',
-      price: '$79',
-      quantity: 'x16',
-      subtotal: '$1264',
-      image: '🍕'
-    },
-    {
-      id: 2,
-      name: 'Veg Burger',
-      price: '$488',
-      quantity: 'x20',
-      subtotal: '$9760',
-      image: '🍔'
-    },
-    {
-      id: 3,
-      name: 'Spaghetti',
-      price: '$23',
-      quantity: 'x10',
-      subtotal: '$230',
-      image: '🍝'
+  // Fetch order details
+  useEffect(() => {
+    if (orderId) {
+      fetchOrderDetails();
     }
-  ];
+  }, [orderId]);
 
-  const orderSteps = [
-    { id: 1, title: 'Order received', completed: true },
-    { id: 2, title: 'Processing', completed: true, active: true },
-    { id: 3, title: 'On the way', completed: false },
-    { id: 4, title: 'Delivered', completed: false }
-  ];
+  const checkAuth = async () => {
+    try {
+      const user = await getCurrentUser();
+      if (!user || user.role !== 'admin') {
+        router.push('/auth/login');
+        return;
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      router.push('/auth/login');
+    }
+  };
+
+  const fetchOrderDetails = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/admin/orders?id=${orderId}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch order details');
+      }
+      
+      const data = await response.json();
+      setOrder(data.order);
+      setEditedStatus(data.order.status);
+    } catch (error) {
+      console.error('Error fetching order:', error);
+      setError(error.message);
+      setToast({ message: 'Failed to load order details', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStatusUpdate = async () => {
+    try {
+      const response = await fetch(`/api/admin/orders`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId: order._id,
+          action: 'update-status',
+          status: editedStatus
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update order status');
+      }
+
+      const data = await response.json();
+      setOrder(prev => ({ ...prev, status: editedStatus }));
+      setIsEditing(false);
+      setToast({ message: 'Order status updated successfully', type: 'success' });
+    } catch (error) {
+      console.error('Error updating status:', error);
+      setToast({ message: 'Failed to update order status', type: 'error' });
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-500 text-black';
+      case 'confirmed': return 'bg-blue-500 text-white';
+      case 'preparing': return 'bg-purple-500 text-white';
+      case 'ready': return 'bg-indigo-500 text-white';
+      case 'out_for_delivery': return 'bg-orange-500 text-white';
+      case 'delivered': return 'bg-green-500 text-white';
+      case 'cancelled': return 'bg-red-500 text-white';
+      default: return 'bg-gray-500 text-white';
+    }
+  };
+
+  const getStatusSteps = (currentStatus) => {
+    const steps = [
+      { id: 'pending', title: 'Order Received', icon: Package },
+      { id: 'confirmed', title: 'Confirmed', icon: CheckCircle },
+      { id: 'preparing', title: 'Preparing', icon: Clock },
+      { id: 'ready', title: 'Ready', icon: CheckCircle },
+      { id: 'out_for_delivery', title: 'Out for Delivery', icon: Truck },
+      { id: 'delivered', title: 'Delivered', icon: CheckCircle }
+    ];
+
+    const statusOrder = ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered'];
+    const currentIndex = statusOrder.indexOf(currentStatus);
+
+    return steps.map((step, index) => ({
+      ...step,
+      completed: index <= currentIndex,
+      active: index === currentIndex
+    }));
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
+  };
+
+  // Toast Component
+  const Toast = ({ message, type, onClose }) => {
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        onClose();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }, [onClose]);
+
+    return (
+      <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+        type === 'success' ? 'bg-green-600' : 
+        type === 'error' ? 'bg-red-600' : 
+        'bg-blue-600'
+      } text-white`}>
+        <div className="flex items-center justify-between">
+          <span>{message}</span>
+          <button onClick={onClose} className="ml-4">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading order details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Order Not Found</h2>
+          <p className="text-gray-600 mb-4">{error || 'The requested order could not be found.'}</p>
+          <button
+            onClick={() => router.push('/admin/order/list')}
+            className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600"
+          >
+            Back to Orders
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-screen bg-gray-900 text-white">
- 
+    <div className="min-h-screen bg-gray-50">
+      {/* Toast */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Search className="w-5 h-5 text-gray-400 mr-3" />
-              <input
-                type="text"
-                placeholder="Search for items..."
-                className="bg-transparent text-gray-300 placeholder-gray-500 focus:outline-none"
-              />
-            </div>
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-6">
             <div className="flex items-center space-x-4">
-              <Globe className="w-5 h-5 text-gray-400 cursor-pointer hover:text-white" />
-              <Maximize className="w-5 h-5 text-gray-400 cursor-pointer hover:text-white" />
-              <div className="relative">
-                <Bell className="w-5 h-5 text-gray-400 cursor-pointer hover:text-white" />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full"></div>
+              <button
+                onClick={() => router.push('/admin/order/list')}
+                className="flex items-center text-gray-600 hover:text-gray-800"
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                Back to Orders
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Order Details</h1>
+                <p className="text-gray-600">Order #{order.orderNumber || order._id}</p>
               </div>
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-orange-500 rounded-full mr-2"></div>
-                <div>
-                  <div className="text-sm font-medium">Katya Botosh</div>
-                  <div className="text-xs text-gray-400">Admin</div>
-                </div>
-              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              {isEditing ? (
+                <>
+                  <select
+                    value={editedStatus}
+                    onChange={(e) => setEditedStatus(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="preparing">Preparing</option>
+                    <option value="ready">Ready</option>
+                    <option value="out_for_delivery">Out for Delivery</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                  <button
+                    onClick={handleStatusUpdate}
+                    className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Save
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditing(false);
+                      setEditedStatus(order.status);
+                    }}
+                    className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
+                    {order.status.replace('_', ' ').toUpperCase()}
+                  </span>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center"
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit Status
+                  </button>
+                </>
+              )}
             </div>
           </div>
-        </header>
+        </div>
+      </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 p-6">
-          {/* Breadcrumb */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center text-sm text-gray-400">
-              <span>Order</span>
-              <ChevronRight className="w-4 h-4 mx-2" />
-              <span className="text-orange-500">Order Details</span>
-            </div>
-            <button className="flex items-center text-orange-500 hover:text-orange-400">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to List
-            </button>
-          </div>
-
-          <h1 className="text-2xl font-bold mb-6">Order Details</h1>
-
-          {/* Order Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-4">
-              <span className="text-xl font-semibold">Order #9F36CA</span>
-              <span className="text-gray-400">•</span>
-              <span className="text-gray-400">September 23, 2023</span>
-              <span className="text-gray-400">•</span>
-              <span className="text-gray-400">3 Products</span>
-            </div>
-          </div>
-
-          {/* Address and Payment Section */}
-          <div className="grid grid-cols-4 gap-6 mb-8">
-            {/* Billing Address */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4 text-white">Billing Address</h3>
-              <div className="space-y-4">
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Order Information */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <div className="font-medium text-white">Jaylon Calzoni</div>
-                  <div className="text-sm text-gray-400">2123 Parker st, Allentown, New Mexico 123456</div>
+                  <p className="text-sm text-gray-500 mb-1">Order Date</p>
+                  <p className="font-medium text-gray-900">{formatDate(order.createdAt)}</p>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-gray-300">Email</div>
-                  <div className="text-sm text-gray-400">jaylon.calzoni@mail.com</div>
+                  <p className="text-sm text-gray-500 mb-1">Order Number</p>
+                  <p className="font-medium text-gray-900">#{order.orderNumber || order._id}</p>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-gray-300">Phone</div>
-                  <div className="text-sm text-gray-400">(123) 456-7890</div>
+                  <p className="text-sm text-gray-500 mb-1">Restaurant</p>
+                  <p className="font-medium text-gray-900">{order.restaurant?.name || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Customer</p>
+                  <p className="font-medium text-gray-900">{order.user?.name || 'N/A'}</p>
                 </div>
               </div>
             </div>
 
-            {/* Shipping Address */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4 text-white">Shipping Address</h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="font-medium text-white">Ryan Westervelt</div>
-                  <div className="text-sm text-gray-400">2123 Parker st, Allentown, New Mexico 123456</div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-300">Email</div>
-                  <div className="text-sm text-gray-400">ryanwestervelt@mail.com</div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-300">Phone</div>
-                  <div className="text-sm text-gray-400">(123) 456-7890</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Total Payment */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4 text-white">Total Payment :</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Subtotal :</span>
-                  <span className="text-white">$365.00</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Discount :</span>
-                  <span className="text-white">20%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Shipping :</span>
-                  <span className="text-white">Free</span>
-                </div>
-                <div className="border-t border-gray-700 pt-3">
-                  <div className="flex justify-between">
-                    <span className="text-lg font-semibold text-white">Total :</span>
-                    <span className="text-lg font-semibold text-white">$84.00</span>
+            {/* Customer & Delivery Address */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <User className="w-5 h-5 mr-2 text-orange-500" />
+                  Customer Details
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-gray-500">Name</p>
+                    <p className="font-medium text-gray-900">{order.user?.name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Email</p>
+                    <p className="font-medium text-gray-900">{order.user?.email || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Phone</p>
+                    <p className="font-medium text-gray-900">{order.user?.phone || 'N/A'}</p>
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Delivery Details */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4 text-white">Delivery Details</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-center w-16 h-16 bg-gray-700 rounded-lg mx-auto mb-4">
-                  <Truck className="w-8 h-8 text-orange-500" />
-                </div>
-                <div className="text-center">
-                  <div className="font-medium text-white">Jay Logistics</div>
-                  <div className="text-sm text-gray-400 mt-2">ID: JLST2023477890</div>
-                  <div className="text-sm text-gray-400 mt-2">
-                    Payment Mode: Prepaid<br />(Debit Card)
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Order Progress */}
-          <div className="bg-gray-800 rounded-lg p-6 mb-8">
-            <div className="flex items-center justify-between relative">
-              {/* Progress Line */}
-              <div className="absolute top-6 left-8 right-8 h-0.5 bg-gray-600">
-                <div className="h-full bg-orange-500" style={{ width: '33%' }}></div>
-              </div>
-
-              {orderSteps.map((step, index) => (
-                <div key={step.id} className="flex flex-col items-center relative z-10">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 ${
-                    step.completed 
-                      ? 'bg-orange-500 border-orange-500 text-white' 
-                      : 'bg-gray-800 border-gray-600 text-gray-400'
-                  }`}>
-                    {step.completed ? (
-                      <span className="text-sm font-bold">✓</span>
-                    ) : (
-                      <span className="text-sm font-bold">{step.id.toString().padStart(2, '0')}</span>
-                    )}
-                  </div>
-                  <div className={`mt-3 text-sm font-medium ${
-                    step.completed ? 'text-white' : 'text-gray-400'
-                  }`}>
-                    {step.title}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Order Items Table */}
-          <div className="bg-gray-800 rounded-lg overflow-hidden mb-8">
-            <table className="w-full">
-              <thead className="bg-gray-700">
-                <tr>
-                  <th className="text-left p-4 text-sm font-medium text-gray-300 uppercase tracking-wider">Dish</th>
-                  <th className="text-left p-4 text-sm font-medium text-gray-300 uppercase tracking-wider">Price</th>
-                  <th className="text-left p-4 text-sm font-medium text-gray-300 uppercase tracking-wider">Quantity</th>
-                  <th className="text-left p-4 text-sm font-medium text-gray-300 uppercase tracking-wider">Sub Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700">
-                {orderItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-700">
-                    <td className="p-4">
-                      <div className="flex items-center">
-                        <div className="w-12 h-12 bg-gray-600 rounded-lg flex items-center justify-center mr-4">
-                          <span className="text-xl">{item.image}</span>
-                        </div>
-                        <span className="text-white font-medium">{item.name}</span>
+              
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <MapPin className="w-5 h-5 mr-2 text-orange-500" />
+                  Delivery Address
+                </h3>
+                <div className="space-y-3">
+                  {order.deliveryAddress ? (
+                    <>
+                      <div>
+                        <p className="text-sm text-gray-500">Address</p>
+                        <p className="font-medium text-gray-900">
+                          {order.deliveryAddress.street}, {order.deliveryAddress.city}
+                        </p>
                       </div>
-                    </td>
-                    <td className="p-4 text-white">{item.price}</td>
-                    <td className="p-4 text-white">{item.quantity}</td>
-                    <td className="p-4 text-white font-medium">{item.subtotal}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Postal Code</p>
+                        <p className="font-medium text-gray-900">{order.deliveryAddress.postalCode}</p>
+                      </div>
+                      {order.deliveryAddress.instructions && (
+                        <div>
+                          <p className="text-sm text-gray-500">Instructions</p>
+                          <p className="font-medium text-gray-900">{order.deliveryAddress.instructions}</p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-gray-500">No delivery address provided</p>
+                  )}
+                </div>
+              </div>
+            </div>
 
-          {/* Logistics Details */}
-          <div className="bg-gray-800 rounded-lg p-6 mb-8">
-            <h3 className="text-lg font-semibold mb-4 text-white">Logistics Details</h3>
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <div className="text-sm text-gray-400 mb-1">Transaction ID :</div>
-                <div className="text-white">#20234567213</div>
+            {/* Payment Summary */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <CreditCard className="w-5 h-5 mr-2 text-orange-500" />
+                Payment Summary
+              </h3>
+              <div className="space-y-3">
+                <div className="flex justify-between text-gray-600">
+                  <span>Subtotal:</span>
+                  <span>{formatCurrency(order.subtotal || 0)}</span>
+                </div>
+                {order.discount > 0 && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>Discount:</span>
+                    <span className="text-red-500">-{formatCurrency(order.discount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-gray-600">
+                  <span>Delivery Fee:</span>
+                  <span>{formatCurrency(order.deliveryFee || 0)}</span>
+                </div>
+                {order.tax > 0 && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>Tax:</span>
+                    <span>{formatCurrency(order.tax)}</span>
+                  </div>
+                )}
+                <div className="border-t border-gray-200 pt-3">
+                  <div className="flex justify-between text-gray-900 font-semibold text-lg">
+                    <span>Total:</span>
+                    <span>{formatCurrency(order.total)}</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <div className="text-sm text-gray-400 mb-1">Payment Method :</div>
-                <div className="text-white">#20234567213</div>
+            </div>
+
+            {/* Restaurant Details */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Store className="w-5 h-5 mr-2 text-orange-500" />
+                Restaurant Details
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Restaurant Name</p>
+                  <p className="font-medium text-gray-900">{order.restaurant?.name || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Contact</p>
+                  <p className="font-medium text-gray-900">{order.restaurant?.phone || 'N/A'}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <p className="text-sm text-gray-500 mb-1">Address</p>
+                  <p className="font-medium text-gray-900">{order.restaurant?.address || 'N/A'}</p>
+                </div>
               </div>
-              <div>
-                <div className="text-sm text-gray-400 mb-1">Card Holder Name :</div>
-                <div className="text-white">Jaylon Calzoni</div>
+            </div>
+
+            {/* Order Progress */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Order Progress</h3>
+              <div className="space-y-4">
+                {getStatusSteps(order.status).map((step, index) => {
+                  const IconComponent = step.icon;
+                  return (
+                    <div key={step.id} className="flex items-center">
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                        step.completed ? 'bg-green-500' : step.active ? 'bg-orange-500' : 'bg-gray-300'
+                      }`}>
+                        <IconComponent className={`w-5 h-5 ${
+                          step.completed || step.active ? 'text-white' : 'text-gray-500'
+                        }`} />
+                      </div>
+                      <div className="ml-4 flex-1">
+                        <div className={`text-sm font-medium ${
+                          step.completed || step.active ? 'text-gray-900' : 'text-gray-500'
+                        }`}>
+                          {step.title}
+                        </div>
+                        {step.active && (
+                          <div className="text-xs text-orange-600 mt-1">Current Status</div>
+                        )}
+                      </div>
+                      {step.completed && (
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              <div>
-                <div className="text-sm text-gray-400 mb-1">Card Number :</div>
-                <div className="text-white">1234 4354 4564</div>
+            </div>
+
+            {/* Order Items */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Order Items</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 text-gray-600 font-medium">Item</th>
+                      <th className="text-left py-3 text-gray-600 font-medium">Price</th>
+                      <th className="text-left py-3 text-gray-600 font-medium">Quantity</th>
+                      <th className="text-right py-3 text-gray-600 font-medium">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {order.items && order.items.length > 0 ? (
+                      order.items.map((item, index) => (
+                        <tr key={index} className="border-b border-gray-100">
+                          <td className="py-4">
+                            <div className="flex items-center">
+                              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mr-4">
+                                <Package className="w-6 h-6 text-gray-400" />
+                              </div>
+                              <div>
+                                <div className="font-medium text-gray-900">{item.name || item.dish?.name || 'N/A'}</div>
+                                {item.description && (
+                                  <div className="text-sm text-gray-500">{item.description}</div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 text-gray-600">{formatCurrency(item.price || 0)}</td>
+                          <td className="py-4 text-gray-600">{item.quantity || 1}</td>
+                          <td className="py-4 text-right text-gray-900 font-medium">
+                            {formatCurrency((item.price || 0) * (item.quantity || 1))}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="4" className="py-8 text-center text-gray-500">
+                          No items found in this order
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
+
+          {/* Right Column */}
+          <div className="space-y-6">
+            {/* Payment Details */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <CreditCard className="w-5 h-5 mr-2 text-orange-500" />
+                Payment Details
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-gray-500">Payment Method</p>
+                  <p className="font-medium text-gray-900">{order.paymentMethod || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Payment Status</p>
+                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                    order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' :
+                    order.paymentStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {order.paymentStatus || 'Unknown'}
+                  </span>
+                </div>
+                {order.transactionId && (
+                  <div>
+                    <p className="text-sm text-gray-500">Transaction ID</p>
+                    <p className="font-medium text-gray-900">{order.transactionId}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Order Timeline */}
+            {order.statusHistory && order.statusHistory.length > 0 && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <Clock className="w-5 h-5 mr-2 text-orange-500" />
+                  Order Timeline
+                </h3>
+                <div className="space-y-4">
+                  {order.statusHistory.map((history, index) => (
+                    <div key={index} className="flex items-start">
+                      <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 mr-3"></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          {history.status.replace('_', ' ').toUpperCase()}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {formatDate(history.timestamp)}
+                        </p>
+                        {history.note && (
+                          <p className="text-xs text-gray-600 mt-1">{history.note}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Delivery Information */}
+            {order.deliveryPerson && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <Truck className="w-5 h-5 mr-2 text-orange-500" />
+                  Delivery Information
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-gray-500">Delivery Person</p>
+                    <p className="font-medium text-gray-900">{order.deliveryPerson.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Contact</p>
+                    <p className="font-medium text-gray-900">{order.deliveryPerson.phone}</p>
+                  </div>
+                  {order.estimatedDeliveryTime && (
+                    <div>
+                      <p className="text-sm text-gray-500">Estimated Delivery</p>
+                      <p className="font-medium text-gray-900">{formatDate(order.estimatedDeliveryTime)}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
  
         </div>
       </div>
     </div>
+    </div>
   );
-};
+}
 
 export default OrderDetailsPage;
