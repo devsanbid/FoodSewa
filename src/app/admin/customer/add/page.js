@@ -17,7 +17,9 @@ import {
   Zap,
   User,
   LogOut,
-  Phone
+  Phone,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 export default function AddCustomerPage() {
@@ -26,25 +28,16 @@ export default function AddCustomerPage() {
     firstName: '',
     lastName: '',
     userName: '',
-    email: 'demoexample@mail.com',
-    phone: '+1-123-XXX-4567',
+    email: '',
+    phone: '',
+    password: '',
     country: '',
     state: '',
     zipCode: '',
-    description: 'Jot something down..'
+    description: ''
   });
 
-  const [dropdowns, setDropdowns] = useState({
-    orders: false,
-    customers: false,
-    restaurants: false,
-    dishes: false,
-    sellers: false,
-    extraPages: false,
-    country: false,
-    state: false,
-    zipCode: false
-  });
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleInputChange = (e) => {
     setFormData({
@@ -53,17 +46,45 @@ export default function AddCustomerPage() {
     });
   };
 
-  const toggleDropdown = (dropdown) => {
-    setDropdowns(prev => ({
-      ...prev,
-      [dropdown]: !prev[dropdown]
-    }));
-  };
 
-  const handleSubmit = (e) => {
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    alert('Customer saved successfully!');
+    
+    try {
+      const response = await fetch('/api/admin/customers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          username: formData.userName,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+          address: {
+            country: formData.country,
+            state: formData.state,
+            zipCode: formData.zipCode
+          },
+          description: formData.description
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('Customer created successfully!');
+        handleClear();
+      } else {
+        alert(data.message || 'Failed to create customer');
+      }
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      alert('Failed to create customer');
+    }
   };
 
   const handleClear = () => {
@@ -73,6 +94,7 @@ export default function AddCustomerPage() {
       userName: '',
       email: '',
       phone: '',
+      password: '',
       country: '',
       state: '',
       zipCode: '',
@@ -86,49 +108,6 @@ export default function AddCustomerPage() {
 
       {/* Main Content */}
       <div className="flex-1 lg:ml-0">
-        {/* Header */}
-        <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button 
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700"
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input 
-                  type="text" 
-                  placeholder="Search for items..."
-                  className="bg-gray-700 text-white pl-10 pr-4 py-2 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <button className="p-2 text-gray-400 hover:text-white">
-                <Globe className="w-5 h-5" />
-              </button>
-              <button className="p-2 text-gray-400 hover:text-white">
-                <Maximize2 className="w-5 h-5" />
-              </button>
-              <button className="p-2 text-gray-400 hover:text-white relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">2</span>
-              </button>
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-semibold">KB</span>
-                </div>
-                <div className="hidden md:block">
-                  <p className="text-sm font-medium">Kaiya Botosh</p>
-                  <p className="text-xs text-gray-400">Admin</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
 
         {/* Page Content */}
         <main className="p-6">
@@ -206,74 +185,70 @@ export default function AddCustomerPage() {
                   name="phone"
                   value={formData.phone}
                   onChange={handleInputChange}
+                  placeholder="Enter phone number"
                   className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 />
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Enter password"
+                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 pr-12 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
               </div>
 
               {/* Country/Region */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Country/Region</label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => toggleDropdown('country')}
-                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-left text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent flex items-center justify-between"
-                  >
-                    <span>Select...</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${dropdowns.country ? 'rotate-180' : ''}`} />
-                  </button>
-                  {dropdowns.country && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-10">
-                      <button type="button" className="w-full px-4 py-2 text-left text-white hover:bg-gray-700">United States</button>
-                      <button type="button" className="w-full px-4 py-2 text-left text-white hover:bg-gray-700">Canada</button>
-                      <button type="button" className="w-full px-4 py-2 text-left text-white hover:bg-gray-700">United Kingdom</button>
-                    </div>
-                  )}
-                </div>
+                <input
+                  type="text"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleInputChange}
+                  placeholder="Enter country/region"
+                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
               </div>
 
               {/* State/Province */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">State/Province</label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => toggleDropdown('state')}
-                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-left text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent flex items-center justify-between"
-                  >
-                    <span>Select...</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${dropdowns.state ? 'rotate-180' : ''}`} />
-                  </button>
-                  {dropdowns.state && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-10">
-                      <button type="button" className="w-full px-4 py-2 text-left text-white hover:bg-gray-700">California</button>
-                      <button type="button" className="w-full px-4 py-2 text-left text-white hover:bg-gray-700">New York</button>
-                      <button type="button" className="w-full px-4 py-2 text-left text-white hover:bg-gray-700">Texas</button>
-                    </div>
-                  )}
-                </div>
+                <input
+                  type="text"
+                  name="state"
+                  value={formData.state}
+                  onChange={handleInputChange}
+                  placeholder="Enter state/province"
+                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
               </div>
 
               {/* ZIP/Postal Code */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">ZIP/Postal Code</label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => toggleDropdown('zipCode')}
-                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-left text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent flex items-center justify-between"
-                  >
-                    <span>Select...</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${dropdowns.zipCode ? 'rotate-180' : ''}`} />
-                  </button>
-                  {dropdowns.zipCode && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-10">
-                      <button type="button" className="w-full px-4 py-2 text-left text-white hover:bg-gray-700">90210</button>
-                      <button type="button" className="w-full px-4 py-2 text-left text-white hover:bg-gray-700">10001</button>
-                      <button type="button" className="w-full px-4 py-2 text-left text-white hover:bg-gray-700">73301</button>
-                    </div>
-                  )}
-                </div>
+                <input
+                  type="text"
+                  name="zipCode"
+                  value={formData.zipCode}
+                  onChange={handleInputChange}
+                  placeholder="Enter ZIP/postal code"
+                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
               </div>
             </div>
 

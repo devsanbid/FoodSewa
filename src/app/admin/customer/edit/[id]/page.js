@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { 
   Search, 
   Globe, 
@@ -22,17 +23,23 @@ import {
 } from 'lucide-react';
 
 export default function EditCustomerPage() {
+  const router = useRouter();
+  const params = useParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
-    firstName: 'Tiana',
-    lastName: 'Geidt',
-    userName: 'tianageidt',
-    email: 'tianageidt@mail.com',
-    phone: '9876785457',
+    firstName: '',
+    lastName: '',
+    userName: '',
+    email: '',
+    phone: '',
     country: '',
     state: '',
     zipCode: '',
-    description: "Hi, I'm Kaiya Botosh, it has been the industry's standard dummy text since the 1500s when an unknown printer took a galley of type."
+    description: '',
+    role: 'user',
+    isActive: true,
+    isVerified: false
   });
 
   const [dropdowns, setDropdowns] = useState({
@@ -61,26 +68,83 @@ export default function EditCustomerPage() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    if (params.id) {
+      fetchCustomerData();
+    }
+  }, [params.id]);
+
+  const fetchCustomerData = async () => {
+    try {
+      const response = await fetch(`/api/admin/customers/${params.id}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        const customer = data.customer;
+        setFormData({
+          firstName: customer.firstName || '',
+          lastName: customer.lastName || '',
+          userName: customer.username || '',
+          email: customer.email || '',
+          phone: customer.phone || '',
+          country: customer.address?.country || '',
+          state: customer.address?.state || '',
+          zipCode: customer.address?.zipCode || '',
+          description: customer.description || '',
+          role: customer.role || 'user',
+          isActive: customer.isActive,
+          isVerified: customer.isVerified
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching customer data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    alert('Customer updated successfully!');
+    
+    try {
+      const response = await fetch(`/api/admin/customers/${params.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          username: formData.userName,
+          email: formData.email,
+          phone: formData.phone,
+          role: formData.role,
+          isActive: formData.isActive,
+          isVerified: formData.isVerified,
+          address: {
+            country: formData.country,
+            state: formData.state,
+            zipCode: formData.zipCode
+          }
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('Customer updated successfully!');
+        router.push('/admin/customer');
+      } else {
+        alert(data.message || 'Failed to update customer');
+      }
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      alert('Failed to update customer');
+    }
   };
 
   const handleCancel = () => {
-    // Reset to original values
-    setFormData({
-      firstName: 'Tiana',
-      lastName: 'Geidt',
-      userName: 'tianageidt',
-      email: 'tianageidt@mail.com',
-      phone: '9876785457',
-      country: '',
-      state: '',
-      zipCode: '',
-      description: "Hi, I'm Kaiya Botosh, it has been the industry's standard dummy text since the 1500s when an unknown printer took a galley of type."
-    });
-    console.log('Changes cancelled');
+    router.push('/admin/customer');
   };
 
   const selectDropdownOption = (dropdown, value) => {
@@ -100,49 +164,7 @@ export default function EditCustomerPage() {
 
       {/* Main Content */}
       <div className="flex-1 lg:ml-0">
-        {/* Header */}
-        <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button 
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700"
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input 
-                  type="text" 
-                  placeholder="Search for items..."
-                  className="bg-gray-700 text-white pl-10 pr-4 py-2 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <button className="p-2 text-gray-400 hover:text-white">
-                <Globe className="w-5 h-5" />
-              </button>
-              <button className="p-2 text-gray-400 hover:text-white">
-                <Maximize2 className="w-5 h-5" />
-              </button>
-              <button className="p-2 text-gray-400 hover:text-white relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">2</span>
-              </button>
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-semibold">KB</span>
-                </div>
-                <div className="hidden md:block">
-                  <p className="text-sm font-medium">Kaiya Botosh</p>
-                  <p className="text-xs text-gray-400">Admin</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
+      
 
         {/* Page Content */}
         <main className="p-6">
