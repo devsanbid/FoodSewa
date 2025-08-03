@@ -1,5 +1,4 @@
-import { NextResponse } from 'next/server';
-import { authenticate, adminOnly } from '@/middleware/auth';
+import { NextResponse } from 'next/server'; import { authenticate, adminOnly } from '@/middleware/auth';
 import { connectDB } from '@/lib/mongodb';
 import User from '@/models/User';
 import Restaurant from '@/models/Restaurant';
