@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { loginAction } from "@/actions/authActions";
+import axios from "axios";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
